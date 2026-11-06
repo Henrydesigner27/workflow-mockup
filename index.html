@@ -116,6 +116,29 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
 .toast .tmsg{flex:1}
 .toast .tx{width:24px;height:24px;border:0;background:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:4px}
 .toast .tx:hover{background:rgba(0,0,0,.08)}
+/* ---- states ---- */
+.has-err>.inp,.has-err .inp,.has-err .sel-btn{border-color:#ba0517;box-shadow:0 0 0 1px #ba0517}
+.err-msg{display:flex;align-items:flex-start;gap:6px;color:#ba0517;font-size:12px;line-height:16px;margin-top:2px}
+.err-msg svg{margin-top:1px}
+.has-err>label,.has-err>.sub{color:#181818}
+.help{font-size:12px;color:#5c5c5c}
+.help[hidden]{display:none}
+.sum-err{display:flex;align-items:center;gap:8px;margin:8px 0 0;padding:10px 12px;border:1px solid #ba0517;border-left-width:4px;border-radius:4px;background:#fdf0ee;color:#181818;font-size:13px;font-weight:600}
+.sum-err[hidden]{display:none}
+.btn-row{display:flex;gap:12px;flex-wrap:wrap}
+.inp.ro{background:#f3f3f3;color:#444;cursor:default}
+.sel-btn:disabled{background:#f3f3f3;color:#939393;border-color:#c9c9c9;cursor:not-allowed}
+.sel-btn:disabled .sel-txt{color:#939393}
+.icon-btn:disabled{border-color:#c9c9c9;color:#c9c9c9;cursor:not-allowed;background:#fff}
+.icon-btn{color:#0176d3}
+.pill:disabled,.btn-out:disabled{border-color:#c9c9c9;color:#939393;background:#fff;cursor:not-allowed}
+.confirm-ov{position:absolute;inset:0;background:rgba(8,7,7,.45);display:flex;align-items:center;justify-content:center;z-index:70;padding:16px}
+.conf{background:#fff;border-radius:4px;width:380px;max-width:100%;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.4);outline:none}
+.conf h3{margin:0 0 8px;font-size:18px;font-weight:600}
+.conf p{margin:0 0 20px;font-size:14px;color:#444;line-height:20px}
+.conf-foot{display:flex;justify-content:flex-end;gap:12px}
+.btn-fill.danger{background:#ba0517;border-color:#ba0517}
+.btn-fill.danger:hover{background:#8e030f;border-color:#8e030f}
 
 </style>
 </head>
@@ -200,18 +223,34 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
   'use strict';
   var overlay = document.getElementById('overlay');
   var openBtn = document.getElementById('create-workflow');
+  var MAX = 10;
 
-  var CARET = '<svg class="car" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 3.5h9L6 9z" fill="#444"/></svg>';
-  var TRASH = '<svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10M9 9v4M11 9v4" stroke="#0176d3" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var CARET = '<svg class="car" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 3.5h9L6 9z" fill="currentColor"/></svg>';
+  var TRASH = '<svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10M9 9v4M11 9v4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var PLUS = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5v11M1.5 7h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+  var ERR_ICO = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="flex:none"><circle cx="7" cy="7" r="7" fill="#ba0517"/><rect x="6.2" y="3" width="1.6" height="5" rx=".6" fill="#fff"/><circle cx="7" cy="10.4" r="1" fill="#fff"/></svg>';
   var ICO_GREEN = '<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="14" fill="#3ba755"/><rect x="7" y="8" width="14" height="12" rx="1.5" fill="#fff"/><path d="M9.5 11h9M9.5 14h9M9.5 17h5" stroke="#3ba755" stroke-width="1.4" stroke-linecap="round"/></svg>';
   var ICO_ORANGE = '<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="4" fill="#fe5c4c"/><circle cx="14" cy="9" r="2.6" fill="#fff"/><path d="M8 20l6-7 6 7M10.5 20l3.5-4 3.5 4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var ICO_BLUE = '<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="4" fill="#6b87e0"/><rect x="6" y="6" width="16" height="16" rx="2" fill="#fff"/></svg>';
   var INFO = '<svg role="img" aria-label="Filter logic help" width="14" height="14" viewBox="0 0 14 14"><title>Combine conditions with AND / OR, for example 1 AND (2 OR 3)</title><circle cx="7" cy="7" r="7" fill="#0250d9"/><rect x="6.1" y="6" width="1.8" height="4.6" rx="0.6" fill="#fff"/><circle cx="7" cy="4" r="1" fill="#fff"/></svg>';
 
+  var OBJECTS = ['AWS Co-sell', 'Azure Co-sell', 'GCP Co-sell'];
   var FIELDS = ['Spektra_SaaSify__Offer_Status__c', 'Spektra_SaaSify__Opportunity_Reference__c', 'Spektra_SaaSify__Offer_Response_Id__c'];
   var OPS = ['Equals', 'Not equals', 'Is changed', 'Contains', 'Greater than', 'Less than'];
-  var UPDATE_FIELDS = ['Description', 'Marketplace ID', 'Stage', 'Next Step'];
+  var TARGETS = ['Opportunity', 'Account', 'Lead', 'Contact'];
+  var UPDATE_FIELDS = {
+    Opportunity: ['Description', 'Stage', 'Next Step', 'Amount', 'Close Date'],
+    Account: ['Description', 'Industry', 'Website'],
+    Lead: ['Description', 'Status', 'Company'],
+    Contact: ['Description', 'Title', 'Phone']
+  };
+  var LOOKUPS = {
+    Opportunity: ['Opportunity ID', 'Spektra_SaaSify__Opportunity_Reference__c', 'Marketplace ID', 'Offer ID'],
+    Account: ['Account ID', 'Marketplace ID'],
+    Lead: ['Lead ID', 'Marketplace ID'],
+    Contact: ['Contact ID', 'Email']
+  };
+  var PRESET_NAME = 'Update Opportunity with OfferID';
 
   var uidN = 0;
   function uid() { uidN += 1; return 'u' + uidN; }
@@ -221,8 +260,10 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
     if (html != null) e.innerHTML = html;
     return e;
   }
+  function blankCond() { return { f: '', o: '', v: '' }; }
+  function isBlank(c) { return !c.f && !c.o && !c.v; }
 
-  /* ---------- custom select (listbox) ---------- */
+  /* ---------- custom select ---------- */
   var openSel = null;
   function makeSelect(o) {
     var options = o.options || [];
@@ -263,6 +304,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
       el: wrap,
       get: function () { return cur; },
       set: function (v) { cur = v; paint(); },
+      disable: function (b, ph) { btn.disabled = !!b; if (ph) placeholder = ph; paint(); },
       open: function () {
         if (openSel && openSel !== api) openSel.close();
         list.hidden = false;
@@ -307,38 +349,135 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
     if (openSel && !openSel.el.contains(e.target)) openSel.close();
   });
 
+  /* ---------- filter logic parsing ---------- */
+  function maxNum(text) {
+    var m = String(text).match(/\d+/g) || [];
+    var mx = 0;
+    m.forEach(function (d) { var n = parseInt(d, 10); if (n > mx) mx = n; });
+    return mx;
+  }
+  // returns { err } or { used: [numbers], bare: n|undefined }
+  function parseLogic(text) {
+    var t = String(text).trim();
+    if (!t) return { err: 'Enter filter logic, for example 1 AND 2.' };
+    var i, n;
+    if (/^\d+$/.test(t)) {
+      n = parseInt(t, 10);
+      if (n < 1) return { err: 'Condition numbers start at 1.' };
+      if (n > MAX) return { err: 'You can add up to ' + MAX + ' conditions.' };
+      var u = [];
+      for (i = 1; i <= n; i++) u.push(i);
+      return { bare: n, used: u };
+    }
+    var toks = t.match(/\d+|\(|\)|[A-Za-z]+|\S/g) || [];
+    var up = toks.map(function (s) { return s.toUpperCase(); });
+    for (i = 0; i < up.length; i++) {
+      if (!/^(\d+|\(|\)|AND|OR)$/.test(up[i])) return { err: 'Use only condition numbers, AND, OR and parentheses.' };
+    }
+    var pos = 0, used = [], err = null;
+    function fail(m) { if (!err) err = m; }
+    function isNum(x) { return /^\d+$/.test(x || ''); }
+    function term() {
+      if (err) return;
+      var x = up[pos];
+      if (x === '(') {
+        pos++;
+        expr();
+        if (err) return;
+        if (up[pos] !== ')') return fail('Parentheses don’t match.');
+        pos++;
+      } else if (isNum(x)) {
+        var k = parseInt(x, 10);
+        if (k < 1) return fail('Condition numbers start at 1.');
+        if (k > MAX) return fail('You can add up to ' + MAX + ' conditions.');
+        if (used.indexOf(k) >= 0) return fail('Condition ' + k + ' is used more than once.');
+        used.push(k);
+        pos++;
+      } else if (x === undefined) {
+        fail('The filter logic is incomplete.');
+      } else if (x === ')') {
+        fail('Parentheses don’t match.');
+      } else {
+        fail('Add a condition number after ' + (up[pos - 1] || 'the start') + '.');
+      }
+    }
+    function expr() {
+      var ops = {};
+      term();
+      while (!err && (up[pos] === 'AND' || up[pos] === 'OR')) {
+        ops[up[pos]] = 1;
+        pos++;
+        term();
+      }
+      if (!err && (isNum(up[pos]) || up[pos] === '(')) fail('Add AND or OR between conditions.');
+      if (!err && ops.AND && ops.OR) fail('Use parentheses when mixing AND and OR, for example 1 AND (2 OR 3).');
+    }
+    expr();
+    if (!err && pos < up.length) fail(up[pos] === ')' ? 'Parentheses don’t match.' : 'Check the filter logic near “' + toks[pos] + '”.');
+    return err ? { err: err } : { used: used };
+  }
+  function defaultLogic(n) {
+    var a = [];
+    for (var i = 1; i <= n; i++) a.push(i);
+    return a.join(' AND ');
+  }
+  function removeFromLogic(text, k, newCount) {
+    var s = String(text).replace(/\d+/g, function (d) {
+      var n = parseInt(d, 10);
+      return n === k ? ' ' : String(n > k ? n - 1 : n);
+    });
+    var prev;
+    do {
+      prev = s;
+      s = s.replace(/\(\s*\)/g, ' ')
+        .replace(/\b(AND|OR)\b(\s*\b(AND|OR)\b)+/gi, function (m) { return m.match(/AND|OR/i)[0]; })
+        .replace(/\(\s*\b(AND|OR)\b/gi, '(')
+        .replace(/\b(AND|OR)\b\s*\)/gi, ')')
+        .replace(/^\s*\b(AND|OR)\b/i, ' ')
+        .replace(/\b(AND|OR)\b\s*$/i, ' ')
+        .replace(/\(\s*(\d+)\s*\)/g, '$1');
+    } while (s !== prev);
+    s = s.replace(/\s+/g, ' ').trim();
+    var p = parseLogic(s);
+    if (p.err || p.bare) return defaultLogic(newCount);
+    return s;
+  }
+
   /* ---------- modal ---------- */
-  var S;
-  var modalEl;
+  var S, R, modalEl, confirmEl;
+
+  function q(sel) { return modalEl.querySelector(sel); }
 
   function modalHTML() {
     return '' +
     '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt" tabindex="-1">' +
       '<div class="m-head"><h2 id="mt">Create New workflow</h2></div>' +
-      '<div class="m-body">' +
+      '<div class="m-body" id="mbody">' +
+        '<div class="sum-err" id="sumErr" role="alert" hidden></div>' +
         '<div class="req-note"><span class="star">*</span>= Required Information</div>' +
         '<section class="sec" aria-labelledby="h-det">' +
           '<div class="sec-h">' + ICO_GREEN + '<h3 id="h-det">Workflow Details</h3></div>' +
-          '<div class="fld"><label id="lbObject"><span class="star">*</span>Object</label><div id="slotObject"></div></div>' +
+          '<div class="fld" data-key="object"><label id="lbObject"><span class="star">*</span>Object</label><div id="slotObject"></div></div>' +
           '<div class="grid2">' +
-            '<div class="fld"><label id="lbType"><span class="star" id="typeStar">*</span>Use Case type</label><div id="slotType"></div></div>' +
-            '<div class="fld" id="ucWrap" hidden><label id="lbUC"><span class="star">*</span>Use Case</label><div id="slotUC"></div></div>' +
+            '<div class="fld" data-key="type"><label id="lbType"><span class="star">*</span>Use Case type</label><div id="slotType"></div></div>' +
+            '<div class="fld" id="ucWrap" data-key="uc" hidden><label id="lbUC"><span class="star">*</span>Use Case</label><div id="slotUC"></div></div>' +
           '</div>' +
         '</section>' +
         '<section class="sec" aria-labelledby="h-conf">' +
           '<div class="sec-h">' + ICO_ORANGE + '<h3 id="h-conf">Workflow Configuration</h3></div>' +
-          '<div class="fld"><label for="wfName">Workflow name</label><input class="inp" id="wfName" type="text"></div>' +
+          '<div class="fld" data-key="name"><label for="wfName"><span class="star">*</span>Workflow name</label><input class="inp" id="wfName" type="text" maxlength="80" autocomplete="off"></div>' +
           '<div class="grid2">' +
-            '<div class="fld"><label id="lbWType">Workflow type</label><div id="slotWType"></div></div>' +
-            '<div class="fld"><label id="lbStatus">Status</label><div id="slotStatus"></div></div>' +
+            '<div class="fld" data-key="wtype"><label id="lbWType"><span class="star">*</span>Workflow type</label><div id="slotWType"></div></div>' +
+            '<div class="fld" data-key="status"><label id="lbStatus"><span class="star">*</span>Status</label><div id="slotStatus"></div></div>' +
           '</div>' +
-          '<div class="fld"><div style="display:flex;align-items:center;gap:8px"><label for="flInput">Filter Logic</label>' + INFO + '</div><input class="inp" id="flInput" type="text" value="1"></div>' +
+          '<div class="fld" data-key="logic"><div style="display:flex;align-items:center;gap:8px"><label for="flInput">Filter Logic</label>' + INFO + '</div><input class="inp" id="flInput" type="text" value="1" autocomplete="off" spellcheck="false"><div class="help" id="flHelp">Enter a number to set how many conditions you need, or write logic such as 1 AND (2 OR 3).</div></div>' +
           '<div class="conds" id="conds"></div>' +
-          '<button type="button" class="pill" id="addCond">' + PLUS + 'Add Condition</button>' +
+          '<div class="btn-row"><button type="button" class="pill" id="addCond">' + PLUS + 'Add Condition</button><button type="button" class="pill" id="addOr">' + PLUS + 'Add OR Condition</button></div>' +
+          '<div class="help" id="maxNote" hidden>You’ve reached the maximum of ' + MAX + ' conditions.</div>' +
         '</section>' +
         '<section class="sec" aria-labelledby="h-rec">' +
           '<div class="sec-h">' + ICO_BLUE + '<h3 id="h-rec">Record Update</h3></div>' +
-          '<div class="fld"><label id="lbTarget">Enter target record type</label><div id="slotTarget"></div></div>' +
+          '<div class="fld" data-key="target"><label id="lbTarget"><span class="star">*</span>Enter target record type</label><div id="slotTarget"></div></div>' +
           '<div id="recBody" style="display:flex;flex-direction:column;gap:12px"></div>' +
         '</section>' +
       '</div>' +
@@ -346,96 +485,237 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
     '</div>';
   }
 
-  function q(sel) { return modalEl.querySelector(sel); }
-
-  function field(labelText, control, labelId) {
+  function field(labelText, control, labelId, key, required) {
     var f = h('div', 'fld');
+    if (key) f.dataset.key = key;
     var lb = h('label');
     lb.id = labelId;
-    lb.textContent = labelText;
+    lb.innerHTML = (required ? '<span class="star">*</span>' : '') ;
+    lb.appendChild(document.createTextNode(labelText));
     f.appendChild(lb);
     f.appendChild(control);
     return f;
   }
 
+  /* --- validation --- */
+  function existingNames() {
+    return Array.prototype.map.call(document.querySelectorAll('a.wf'), function (a) { return a.textContent.trim().toLowerCase(); });
+  }
+  function validate() {
+    var e = {};
+    if (!R.obj.get()) e.object = 'Select an object.';
+    if (!R.type.get()) e.type = 'Select a use case type.';
+    if (!q('#ucWrap').hidden && !R.uc.get()) e.uc = 'Select a use case.';
+    var name = q('#wfName').value.trim();
+    if (!name) e.name = 'Enter a workflow name.';
+    else if (existingNames().indexOf(name.toLowerCase()) >= 0) e.name = 'A workflow named “' + name + '” already exists. Use a different name.';
+    if (!R.wtype.get()) e.wtype = 'Select a workflow type.';
+    if (!R.status.get()) e.status = 'Select a status.';
+
+    var lg = parseLogic(q('#flInput').value);
+    if (lg.err) e.logic = lg.err;
+    else {
+      for (var k = 1; k <= S.conds.length; k++) {
+        if (lg.used.indexOf(k) < 0) { e.logic = 'Condition ' + k + ' isn’t used in the filter logic. Add it, or delete the condition.'; break; }
+      }
+    }
+    S.conds.forEach(function (c, i) {
+      if (!c.f) e['c' + i + 'f'] = 'Select a field.';
+      if (!c.o) e['c' + i + 'o'] = 'Select an operator.';
+      if (c.o !== 'Is changed' && !c.v.trim()) e['c' + i + 'v'] = 'Enter a value.';
+    });
+
+    if (!S.target) e.target = 'Select a target record type.';
+    else {
+      if (!S.ident) e.ident = 'Select how to identify the record.';
+      else if (S.ident === 'Lookup' && !S.lookupField) e.lookup = 'Select a lookup field.';
+      else if (S.ident === 'Static') {
+        var id = S.staticId.trim();
+        if (!id) e.staticId = 'Enter a record ID.';
+        else if (!/^([a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/.test(id)) e.staticId = 'Enter a valid 15 or 18-character record ID.';
+      }
+      if (S.addAttempt) e.fadd = 'Select a field to add.';
+      else if (!S.fields.length) e.fields = 'Add at least one field to update.';
+      S.fields.forEach(function (f, i) {
+        if (!f.t) e['f' + i + 't'] = 'Select a type.';
+        if (!f.v.trim()) e['f' + i + 'v'] = 'Enter a value.';
+      });
+    }
+    return e;
+  }
+  function refreshErrors() {
+    if (!modalEl) return;
+    var errs = validate();
+    var shown = {};
+    Object.keys(errs).forEach(function (k) { if (S.submitted || S.touched[k]) shown[k] = errs[k]; });
+    Array.prototype.forEach.call(modalEl.querySelectorAll('[data-key]'), function (n) {
+      var key = n.dataset.key;
+      var msg = shown[key];
+      var ctl = n.querySelector('.inp, .sel-btn');
+      var m = n.querySelector(':scope > .err-msg');
+      if (msg) {
+        if (!m) { m = h('div', 'err-msg'); m.id = 'err-' + key; n.appendChild(m); }
+        m.innerHTML = ERR_ICO + '<span></span>';
+        m.lastChild.textContent = msg;
+        n.classList.add('has-err');
+        if (ctl) { ctl.setAttribute('aria-invalid', 'true'); ctl.setAttribute('aria-describedby', m.id); }
+      } else {
+        if (m) m.remove();
+        n.classList.remove('has-err');
+        if (ctl) { ctl.removeAttribute('aria-invalid'); ctl.removeAttribute('aria-describedby'); }
+      }
+    });
+    var help = q('#flHelp');
+    if (help) help.hidden = !!shown.logic;
+    var sum = q('#sumErr');
+    var cnt = Object.keys(errs).length;
+    if (S.submitted && cnt) {
+      sum.hidden = false;
+      sum.innerHTML = ERR_ICO + '<span>Review the ' + cnt + (cnt === 1 ? ' error' : ' errors') + ' below before saving.</span>';
+    } else {
+      sum.hidden = true;
+    }
+  }
+  function changed() { refreshErrors(); }
+
+  /* --- condition rows --- */
+  function setLogic(v) { q('#flInput').value = v; }
   function renderConds() {
     var box = q('#conds');
     box.innerHTML = '';
-    S.conds.forEach(function (group, gi) {
-      var g = h('div', 'cgroup');
-      group.forEach(function (row, ri) {
-        var d = h('div', 'cond' + (ri ? ' or' : ''));
-        var gut = h('div', 'gut');
-        gut.textContent = ri ? 'OR' : String(gi + 1);
-        d.appendChild(gut);
-        var idF = uid(), idO = uid(), idV = uid();
-        d.appendChild(field('Field', makeSelect({ options: FIELDS, value: row.f, labelId: idF, onChange: function (v) { row.f = v; } }).el, idF));
-        d.appendChild(field('Operator', makeSelect({ options: OPS, value: row.o, labelId: idO, onChange: function (v) { row.o = v; } }).el, idO));
-        var inp = h('input', 'inp');
-        inp.type = 'text';
-        inp.placeholder = 'Select…';
-        inp.value = row.v;
-        inp.setAttribute('aria-labelledby', idV);
-        inp.addEventListener('input', function () { row.v = inp.value; });
-        d.appendChild(field('Value', inp, idV));
-        var del = h('button', 'icon-btn', TRASH);
-        del.type = 'button';
-        del.setAttribute('aria-label', 'Delete condition');
-        del.addEventListener('click', function () {
-          group.splice(ri, 1);
-          if (!group.length) S.conds.splice(gi, 1);
-          renderConds();
-        });
-        d.appendChild(del);
-        g.appendChild(d);
+    S.conds.forEach(function (row, i) {
+      var d = h('div', 'cond');
+      var gut = h('div', 'gut');
+      gut.textContent = String(i + 1);
+      d.appendChild(gut);
+      var idF = uid(), idO = uid(), idV = uid();
+      d.appendChild(field('Field', makeSelect({ options: FIELDS, value: row.f, labelId: idF, onChange: function (v) { row.f = v; changed(); } }).el, idF, 'c' + i + 'f', true));
+      var inp = h('input', 'inp');
+      inp.type = 'text';
+      inp.maxLength = 255;
+      inp.placeholder = 'Enter a value';
+      inp.value = row.v;
+      inp.setAttribute('aria-labelledby', idV);
+      inp.addEventListener('input', function () { row.v = inp.value; changed(); });
+      function paintOp() {
+        var on = row.o === 'Is changed';
+        inp.readOnly = on;
+        inp.classList.toggle('ro', on);
+        if (on) { row.v = 'true'; inp.value = 'true'; }
+      }
+      d.appendChild(field('Operator', makeSelect({
+        options: OPS, value: row.o, labelId: idO,
+        onChange: function (v) {
+          var was = row.o;
+          row.o = v;
+          if (was === 'Is changed' && v !== 'Is changed') { row.v = ''; inp.value = ''; }
+          paintOp();
+          changed();
+        }
+      }).el, idO, 'c' + i + 'o', true));
+      d.appendChild(field('Value', inp, idV, 'c' + i + 'v', true));
+      paintOp();
+      var del = h('button', 'icon-btn', TRASH);
+      del.type = 'button';
+      del.disabled = S.conds.length === 1;
+      del.setAttribute('aria-label', del.disabled ? 'At least one condition is required' : 'Delete condition ' + (i + 1));
+      del.title = del.disabled ? 'At least one condition is required' : 'Delete condition';
+      del.addEventListener('click', function () {
+        S.conds.splice(i, 1);
+        setLogic(removeFromLogic(q('#flInput').value, i + 1, S.conds.length));
+        renderConds();
+        changed();
       });
-      var or = h('button', 'link', PLUS + 'Add OR Condition');
-      or.type = 'button';
-      or.addEventListener('click', function () { group.push({ f: '', o: '', v: '' }); renderConds(); });
-      g.appendChild(or);
-      box.appendChild(g);
+      d.appendChild(del);
+      box.appendChild(d);
     });
+    var full = S.conds.length >= MAX;
+    q('#addCond').disabled = full;
+    q('#addOr').disabled = full;
+    q('#maxNote').hidden = !full;
+  }
+  function setRowCount(n) {
+    var before = S.conds.length;
+    while (S.conds.length < n) S.conds.push(blankCond());
+    while (S.conds.length > n && isBlank(S.conds[S.conds.length - 1]) && S.conds.length > 1) S.conds.pop();
+    if (S.conds.length !== before) renderConds();
+  }
+  function addCondition(op) {
+    if (S.conds.length >= MAX) return;
+    var cur = q('#flInput').value.trim();
+    var p = parseLogic(cur);
+    S.conds.push(blankCond());
+    var n = S.conds.length;
+    var next;
+    if (p.err || p.bare || !cur) next = defaultLogic(n - 1) + ' ' + op + ' ' + n;
+    else {
+      var hasOr = /\bOR\b/i.test(cur), hasAnd = /\bAND\b/i.test(cur);
+      var wrap = (op === 'AND' && hasOr) || (op === 'OR' && hasAnd);
+      next = (wrap ? '(' + cur + ')' : cur) + ' ' + op + ' ' + n;
+    }
+    if (n === 1) next = '1';
+    setLogic(next);
+    renderConds();
+    changed();
+    var last = q('#conds').lastElementChild;
+    if (last && last.scrollIntoView) last.scrollIntoView({ block: 'nearest' });
   }
 
+  /* --- record update --- */
   function renderFields(container) {
     container.innerHTML = '';
+    var wrapAll = h('div', 'fld');
+    wrapAll.dataset.key = 'fields';
     var lid = uid();
     var lb = h('div', 'sub');
     lb.id = lid;
-    lb.textContent = 'Fields to update';
-    container.appendChild(lb);
+    lb.innerHTML = '<span class="star">*</span>';
+    lb.appendChild(document.createTextNode('Fields to update'));
+    wrapAll.appendChild(lb);
     var used = S.fields.map(function (f) { return f.n; });
-    var avail = UPDATE_FIELDS.filter(function (n) { return used.indexOf(n) < 0; });
-    var cb = makeSelect({ options: avail, placeholder: 'Search & select a field to add', labelId: lid });
+    var avail = (UPDATE_FIELDS[S.target] || []).filter(function (n) { return used.indexOf(n) < 0; });
+    var cb = makeSelect({
+      options: avail, placeholder: 'Search & select a field to add', labelId: lid,
+      onChange: function () { S.addAttempt = false; changed(); }
+    });
     var add = h('button', 'btn-out', 'Add');
     add.type = 'button';
+    if (!avail.length) { cb.disable(true, 'All available fields added'); add.disabled = true; }
     add.addEventListener('click', function () {
       var v = cb.get();
-      if (!v) return;
+      if (!v) { S.addAttempt = true; S.touched.fadd = true; changed(); return; }
+      S.addAttempt = false;
       S.fields.push({ n: v, t: '', v: '' });
       renderFields(container);
+      changed();
     });
     var row = h('div', 'fu-row');
-    row.appendChild(cb.el);
+    var cbWrap = h('div', 'fld');
+    cbWrap.dataset.key = 'fadd';
+    cbWrap.appendChild(cb.el);
+    row.appendChild(cbWrap);
     row.appendChild(add);
-    container.appendChild(row);
+    wrapAll.appendChild(row);
+    container.appendChild(wrapAll);
     S.fields.forEach(function (f, i) {
       var r = h('div', 'frow');
       var nm = h('div', 'fname');
       nm.textContent = f.n;
+      nm.title = f.n;
       r.appendChild(nm);
       var idT = uid(), idV = uid();
-      r.appendChild(field('Type', makeSelect({ options: ['Static', 'Lookup', 'Formula'], value: f.t, labelId: idT, onChange: function (v) { f.t = v; } }).el, idT));
+      r.appendChild(field('Type', makeSelect({ options: ['Static', 'Lookup', 'Formula'], value: f.t, labelId: idT, onChange: function (v) { f.t = v; changed(); } }).el, idT, 'f' + i + 't', true));
       var inp = h('input', 'inp');
       inp.type = 'text';
+      inp.maxLength = 255;
       inp.value = f.v;
       inp.setAttribute('aria-labelledby', idV);
-      inp.addEventListener('input', function () { f.v = inp.value; });
-      r.appendChild(field('Value', inp, idV));
+      inp.addEventListener('input', function () { f.v = inp.value; changed(); });
+      r.appendChild(field('Value', inp, idV, 'f' + i + 'v', true));
       var del = h('button', 'icon-btn', TRASH);
       del.type = 'button';
       del.setAttribute('aria-label', 'Remove ' + f.n);
-      del.addEventListener('click', function () { S.fields.splice(i, 1); renderFields(container); });
+      del.addEventListener('click', function () { S.fields.splice(i, 1); renderFields(container); changed(); });
       r.appendChild(del);
       container.appendChild(r);
     });
@@ -455,23 +735,25 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
       options: ['Lookup', 'Static'], value: S.ident, labelId: idI,
       onChange: function (v) {
         S.ident = v;
-        if (v === 'Lookup' && !S.lookupField) S.lookupField = 'Opportunity ID';
+        if (v === 'Lookup' && !S.lookupField) S.lookupField = (LOOKUPS[S.target] || [])[0] || '';
         renderRecord();
+        changed();
       }
     });
-    grid.appendChild(field('Identify record by', ident.el, idI));
+    grid.appendChild(field('Identify record by', ident.el, idI, 'ident', true));
     if (S.ident === 'Lookup') {
       var idL = uid();
-      grid.appendChild(field('Lookup field', makeSelect({ options: ['Opportunity ID', 'Spektra_SaaSify__Opportunity_Reference__c', 'Marketplace ID', 'Offer ID'], value: S.lookupField, labelId: idL, onChange: function (v) { S.lookupField = v; } }).el, idL));
+      grid.appendChild(field('Lookup field', makeSelect({ options: LOOKUPS[S.target] || [], value: S.lookupField, labelId: idL, onChange: function (v) { S.lookupField = v; changed(); } }).el, idL, 'lookup', true));
     } else if (S.ident === 'Static') {
       var idS = uid();
       var inp = h('input', 'inp');
       inp.type = 'text';
-      inp.placeholder = 'Enter the record ID';
+      inp.maxLength = 18;
+      inp.placeholder = '15 or 18-character ID';
       inp.value = S.staticId;
       inp.setAttribute('aria-labelledby', idS);
-      inp.addEventListener('input', function () { S.staticId = inp.value; });
-      grid.appendChild(field('Record ID', inp, idS));
+      inp.addEventListener('input', function () { S.staticId = inp.value; changed(); });
+      grid.appendChild(field('Record ID', inp, idS, 'staticId', true));
     }
     box.appendChild(grid);
     var fu = h('div', 'fu');
@@ -479,72 +761,153 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
     renderFields(fu);
   }
 
-  function initModal() {
-    S = { conds: [[{ f: '', o: '', v: '' }]], target: '', ident: '', lookupField: '', staticId: '', fields: [] };
-    var wfType = makeSelect({ options: ['Record Update', 'Record Creation', 'Email Automation'], labelId: 'lbWType' });
-    var wfStatus = makeSelect({ options: ['Active', 'Inactive'], labelId: 'lbStatus' });
-    var uc = makeSelect({ options: ['Update Opportunity with OfferID', 'Updated Opportunity ACE ID from AWS Co-sell', 'Create Opportunity from Marketplace Private Offer'], labelId: 'lbUC',
-      onChange: function (v) { if (v === 'Update Opportunity with OfferID') applyPreset(); } });
-    var obj = makeSelect({ options: ['Opportunity', 'Account', 'Lead', 'Contact'], labelId: 'lbObject' });
-    var presetApplied = false;
-    function resetForm() {
-      if (presetApplied) obj.set('');
-      presetApplied = false;
-      uc.set('');
-      q('#wfName').value = '';
-      wfType.set(''); wfStatus.set('');
-      q('#flInput').value = '1';
-      S.conds = [[{ f: '', o: '', v: '' }]];
-      S.target = ''; targetSel.set('');
-      S.ident = ''; S.lookupField = ''; S.staticId = ''; S.fields = [];
-      renderConds(); renderRecord();
-    }
-    function applyPreset() {
-      presetApplied = true;
-      obj.set('Opportunity');
-      q('#wfName').value = 'Update Opportunity with OfferID';
-      wfType.set('Record Update');
-      wfStatus.set('Active');
-      q('#flInput').value = '1';
-      S.conds = [[{ f: 'Spektra_SaaSify__Offer_Status__c', o: 'Equals', v: 'DealPurchasedFromMarketplace' }],
-                 [{ f: 'Spektra_SaaSify__Offer_Status__c', o: 'Is changed', v: 'true' }]];
-      S.target = 'Opportunity'; targetSel.set('Opportunity');
-      S.ident = 'Lookup'; S.lookupField = 'Spektra_SaaSify__Opportunity_Reference__c';
-      S.fields = [{ n: 'Description', t: 'Formula', v: 'Spektra_SaaSify__Offer_Response_Id__c' }];
-      renderConds(); renderRecord();
-    }
-    var type = makeSelect({
-      options: ['Use existing preset', 'Build your own preset', 'Clone existing preset'], labelId: 'lbType',
-      onChange: function (v) {
-        q('#typeStar').hidden = true;
-        q('#ucWrap').hidden = (v === 'Build your own preset');
-        if (v === 'Build your own preset') { resetForm(); return; }
-        if (!wfType.get()) wfType.set('Record Update');
-        if (!wfStatus.get()) wfStatus.set('Active');
-      }
-    });
-    var targetSel = makeSelect({
-      options: ['Opportunity', 'Account', 'Lead', 'Contact'], labelId: 'lbTarget',
-      onChange: function (v) { S.target = v; renderRecord(); }
-    });
-    q('#slotObject').appendChild(obj.el);
-    q('#slotType').appendChild(type.el);
-    q('#slotUC').appendChild(uc.el);
-    q('#slotWType').appendChild(wfType.el);
-    q('#slotStatus').appendChild(wfStatus.el);
-    q('#slotTarget').appendChild(targetSel.el);
-    renderConds();
-    renderRecord();
-    q('#addCond').addEventListener('click', function () { S.conds.push([{ f: '', o: '', v: '' }]); renderConds(); });
-    q('#cancel').addEventListener('click', closeModal);
-    q('#save').addEventListener('click', function () { closeModal(); showToast(); });
+  /* --- presets / reset --- */
+  function resetRecord() {
+    S.ident = ''; S.lookupField = ''; S.staticId = ''; S.fields = []; S.addAttempt = false;
+  }
+  function applyPreset() {
+    S.presetApplied = true;
+    R.obj.set('AWS Co-sell');
+    q('#wfName').value = PRESET_NAME;
+    R.wtype.set('Record Update');
+    R.status.set('Active');
+    S.conds = [
+      { f: 'Spektra_SaaSify__Offer_Status__c', o: 'Equals', v: 'DealPurchasedFromMarketplace' },
+      { f: 'Spektra_SaaSify__Offer_Status__c', o: 'Is changed', v: 'true' }
+    ];
+    setLogic('1 AND 2');
+    S.target = 'Opportunity'; R.target.set('Opportunity');
+    S.ident = 'Lookup'; S.lookupField = 'Spektra_SaaSify__Opportunity_Reference__c'; S.staticId = '';
+    S.fields = [{ n: 'Description', t: 'Formula', v: 'Spektra_SaaSify__Offer_Response_Id__c' }];
+    S.addAttempt = false;
+    renderConds(); renderRecord();
+  }
+  function resetForm() {
+    if (S.presetApplied) R.obj.set('');
+    S.presetApplied = false;
+    R.uc.set('');
+    q('#wfName').value = '';
+    R.wtype.set(''); R.status.set('');
+    setLogic('1');
+    S.conds = [blankCond()];
+    S.target = ''; R.target.set('');
+    resetRecord();
+    S.touched = {}; S.submitted = false;
+    renderConds(); renderRecord();
   }
 
+  function snapshot() {
+    return JSON.stringify([R.obj.get(), R.type.get(), R.uc.get(), q('#wfName').value, R.wtype.get(), R.status.get(), q('#flInput').value, S.conds, S.target, S.ident, S.lookupField, S.staticId, S.fields]);
+  }
+
+  function initModal() {
+    S = { conds: [blankCond()], target: '', ident: '', lookupField: '', staticId: '', fields: [], touched: {}, submitted: false, addAttempt: false, presetApplied: false, initial: '' };
+    R = {};
+    R.wtype = makeSelect({ options: ['Record Update', 'Record Creation', 'Email Automation'], labelId: 'lbWType', onChange: changed });
+    R.status = makeSelect({ options: ['Active', 'Inactive'], labelId: 'lbStatus', onChange: changed });
+    R.uc = makeSelect({
+      options: [PRESET_NAME, 'Updated Opportunity ACE ID from AWS Co-sell', 'Create Opportunity from Marketplace Private Offer'], labelId: 'lbUC',
+      onChange: function (v) { if (v === PRESET_NAME) applyPreset(); changed(); }
+    });
+    R.obj = makeSelect({ options: OBJECTS, labelId: 'lbObject', onChange: changed });
+    R.type = makeSelect({
+      options: ['Use existing preset', 'Build your own preset', 'Clone existing preset'], labelId: 'lbType',
+      onChange: function (v) {
+        q('#ucWrap').hidden = (v === 'Build your own preset');
+        if (v === 'Build your own preset') { resetForm(); R.type.set(v); changed(); return; }
+        if (!R.wtype.get()) R.wtype.set('Record Update');
+        if (!R.status.get()) R.status.set('Active');
+        changed();
+      }
+    });
+    R.target = makeSelect({
+      options: TARGETS, labelId: 'lbTarget',
+      onChange: function (v) {
+        if (v !== S.target) { S.target = v; resetRecord(); renderRecord(); }
+        changed();
+      }
+    });
+    q('#slotObject').appendChild(R.obj.el);
+    q('#slotType').appendChild(R.type.el);
+    q('#slotUC').appendChild(R.uc.el);
+    q('#slotWType').appendChild(R.wtype.el);
+    q('#slotStatus').appendChild(R.status.el);
+    q('#slotTarget').appendChild(R.target.el);
+    renderConds();
+    renderRecord();
+
+    var fl = q('#flInput');
+    fl.addEventListener('input', function () {
+      S.touched.logic = true;
+      var p = parseLogic(fl.value);
+      var n = p.bare || maxNum(fl.value);
+      if (n >= 1 && n <= MAX) setRowCount(n);
+      changed();
+    });
+    fl.addEventListener('blur', function () {
+      var p = parseLogic(fl.value);
+      if (p.bare && p.bare > 1) { fl.value = defaultLogic(p.bare); }
+      changed();
+    });
+    q('#wfName').addEventListener('input', changed);
+    q('#addCond').addEventListener('click', function () { addCondition('AND'); });
+    q('#addOr').addEventListener('click', function () { addCondition('OR'); });
+    modalEl.addEventListener('focusout', function (e) {
+      var t = e.target;
+      if (t && t.classList && t.classList.contains('inp')) {
+        var n = t.closest('[data-key]');
+        if (n) { S.touched[n.dataset.key] = true; refreshErrors(); }
+      }
+    });
+    q('#cancel').addEventListener('click', attemptClose);
+    q('#save').addEventListener('click', save);
+    S.initial = snapshot();
+  }
+
+  function save() {
+    S.submitted = true;
+    var errs = validate();
+    refreshErrors();
+    if (Object.keys(errs).length) {
+      var first = q('.has-err');
+      if (first) {
+        first.scrollIntoView({ block: 'center' });
+        var c = first.querySelector('.inp, .sel-btn');
+        if (c) c.focus();
+      }
+      return;
+    }
+    addRow();
+    closeModal();
+    showToast();
+  }
+
+  function addRow() {
+    var tb = document.querySelector('tbody');
+    var tr = tb.lastElementChild.cloneNode(true);
+    var n = tb.children.length + 1;
+    var status = R.status.get();
+    var name = q('#wfName').value.trim();
+    tr.children[0].textContent = String(n);
+    tr.querySelector('a.wf').textContent = name;
+    tr.children[3].textContent = R.wtype.get();
+    var badge = tr.querySelector('.badge');
+    badge.className = 'badge ' + (status === 'Active' ? 'on' : 'off');
+    badge.textContent = status;
+    tr.children[5].textContent = R.obj.get();
+    tr.children[6].textContent = R.wtype.get();
+    tb.appendChild(tr);
+    var p = document.querySelector('.title-wrap p');
+    if (p) p.textContent = n + ' items • Updated just now';
+  }
+
+  /* --- open / close / discard --- */
   function openModal() {
     overlay.innerHTML = modalHTML();
     overlay.hidden = false;
     document.body.style.overflow = 'hidden';
     modalEl = overlay.querySelector('.modal');
+    confirmEl = null;
     initModal();
     modalEl.focus();
   }
@@ -552,8 +915,28 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
     openSel = null;
     overlay.hidden = true;
     overlay.innerHTML = '';
+    modalEl = null; confirmEl = null;
     document.body.style.overflow = '';
     openBtn.focus();
+  }
+  function attemptClose() {
+    if (snapshot() === S.initial) { closeModal(); return; }
+    if (confirmEl) return;
+    confirmEl = h('div', 'confirm-ov');
+    confirmEl.innerHTML = '<div class="conf" role="alertdialog" aria-modal="true" aria-labelledby="cft" aria-describedby="cfd" tabindex="-1">' +
+      '<h3 id="cft">Discard changes?</h3><p id="cfd">This workflow hasn’t been saved. If you leave now, your changes will be lost.</p>' +
+      '<div class="conf-foot"><button type="button" class="btn-out" id="keep">Keep editing</button><button type="button" class="btn-fill danger" id="discard">Discard</button></div></div>';
+    overlay.appendChild(confirmEl);
+    confirmEl.querySelector('#keep').addEventListener('click', closeConfirm);
+    confirmEl.querySelector('#discard').addEventListener('click', closeModal);
+    confirmEl.querySelector('#keep').focus();
+  }
+  function closeConfirm() {
+    if (!confirmEl) return;
+    confirmEl.remove();
+    confirmEl = null;
+    var c = q('#cancel');
+    if (c) c.focus();
   }
 
   function showToast() {
@@ -571,14 +954,19 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
 
   openBtn.addEventListener('click', openModal);
   document.addEventListener('keydown', function (e) {
-    if (overlay.hidden) return;
-    if (e.key === 'Escape' && !openSel) { closeModal(); return; }
+    if (overlay.hidden || !modalEl) return;
+    if (e.key === 'Escape') {
+      if (confirmEl) { closeConfirm(); return; }
+      if (!openSel) attemptClose();
+      return;
+    }
     if (e.key === 'Tab') {
-      var f = modalEl.querySelectorAll('button:not([disabled]),input:not([disabled])');
+      var scope = confirmEl || modalEl;
+      var f = scope.querySelectorAll('button:not([disabled]),input:not([disabled])');
       var vis = Array.prototype.filter.call(f, function (n) { return n.offsetParent !== null; });
       if (!vis.length) return;
       var first = vis[0], last = vis[vis.length - 1];
-      if (e.shiftKey && (document.activeElement === first || document.activeElement === modalEl)) { e.preventDefault(); last.focus(); }
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === scope || document.activeElement === modalEl)) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
   });
