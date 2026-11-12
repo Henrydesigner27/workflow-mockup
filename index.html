@@ -261,7 +261,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
     return e;
   }
   function blankCond() { return { f: '', o: '', v: '' }; }
-  function isBlank(c) { return !c.f && !c.o && !c.v; }
+  function isBlank(g) { return g.every(function (c) { return !c.f && !c.o && !c.v; }); }
 
   /* ---------- custom select ---------- */
   var openSel = null;
@@ -472,7 +472,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
           '</div>' +
           '<div class="fld" data-key="logic"><div style="display:flex;align-items:center;gap:8px"><label for="flInput">Filter Logic</label>' + INFO + '</div><input class="inp" id="flInput" type="text" value="1" autocomplete="off" spellcheck="false"><div class="help" id="flHelp">Enter a number to set how many conditions you need, or write logic such as 1 AND (2 OR 3).</div></div>' +
           '<div class="conds" id="conds"></div>' +
-          '<div class="btn-row"><button type="button" class="pill" id="addCond">' + PLUS + 'Add Condition</button><button type="button" class="pill" id="addOr">' + PLUS + 'Add OR Condition</button></div>' +
+          '<div class="btn-row"><button type="button" class="pill" id="addCond">' + PLUS + 'Add Condition</button></div>' +
           '<div class="help" id="maxNote" hidden>You’ve reached the maximum of ' + MAX + ' conditions.</div>' +
         '</section>' +
         '<section class="sec" aria-labelledby="h-rec">' +
@@ -519,10 +519,13 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
         if (lg.used.indexOf(k) < 0) { e.logic = 'Condition ' + k + ' isn’t used in the filter logic. Add it, or delete the condition.'; break; }
       }
     }
-    S.conds.forEach(function (c, i) {
-      if (!c.f) e['c' + i + 'f'] = 'Select a field.';
-      if (!c.o) e['c' + i + 'o'] = 'Select an operator.';
-      if (c.o !== 'Is changed' && !c.v.trim()) e['c' + i + 'v'] = 'Enter a value.';
+    S.conds.forEach(function (g, gi) {
+      g.forEach(function (c, ri) {
+        var k = 'c' + gi + '_' + ri;
+        if (!c.f) e[k + 'f'] = 'Select a field.';
+        if (!c.o) e[k + 'o'] = 'Select an operator.';
+        if (c.o !== 'Is changed' && !c.v.trim()) e[k + 'v'] = 'Enter a value.';
+      });
     });
 
     if (!S.target) e.target = 'Select a target record type.';
@@ -583,68 +586,91 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
   function renderConds() {
     var box = q('#conds');
     box.innerHTML = '';
-    S.conds.forEach(function (row, i) {
-      var d = h('div', 'cond');
-      var gut = h('div', 'gut');
-      gut.textContent = String(i + 1);
-      d.appendChild(gut);
-      var idF = uid(), idO = uid(), idV = uid();
-      d.appendChild(field('Field', makeSelect({ options: FIELDS, value: row.f, labelId: idF, onChange: function (v) { row.f = v; changed(); } }).el, idF, 'c' + i + 'f', true));
-      var inp = h('input', 'inp');
-      inp.type = 'text';
-      inp.maxLength = 255;
-      inp.placeholder = 'Enter a value';
-      inp.value = row.v;
-      inp.setAttribute('aria-labelledby', idV);
-      inp.addEventListener('input', function () { row.v = inp.value; changed(); });
-      function paintOp() {
-        var on = row.o === 'Is changed';
-        inp.readOnly = on;
-        inp.classList.toggle('ro', on);
-        if (on) { row.v = 'true'; inp.value = 'true'; }
-      }
-      d.appendChild(field('Operator', makeSelect({
-        options: OPS, value: row.o, labelId: idO,
-        onChange: function (v) {
-          var was = row.o;
-          row.o = v;
-          if (was === 'Is changed' && v !== 'Is changed') { row.v = ''; inp.value = ''; }
-          paintOp();
+    S.conds.forEach(function (group, gi) {
+      var g = h('div', 'cgroup');
+      group.forEach(function (row, ri) {
+        var d = h('div', 'cond' + (ri ? ' or' : ''));
+        var gut = h('div', 'gut');
+        gut.textContent = ri ? 'OR' : String(gi + 1);
+        d.appendChild(gut);
+        var key = 'c' + gi + '_' + ri;
+        var idF = uid(), idO = uid(), idV = uid();
+        d.appendChild(field('Field', makeSelect({ options: FIELDS, value: row.f, labelId: idF, onChange: function (v) { row.f = v; changed(); } }).el, idF, key + 'f', true));
+        var inp = h('input', 'inp');
+        inp.type = 'text';
+        inp.maxLength = 255;
+        inp.placeholder = 'Enter a value';
+        inp.value = row.v;
+        inp.setAttribute('aria-labelledby', idV);
+        inp.addEventListener('input', function () { row.v = inp.value; changed(); });
+        var paintOp = function () {
+          var on = row.o === 'Is changed';
+          inp.readOnly = on;
+          inp.classList.toggle('ro', on);
+          if (on) { row.v = 'true'; inp.value = 'true'; }
+        };
+        d.appendChild(field('Operator', makeSelect({
+          options: OPS, value: row.o, labelId: idO,
+          onChange: function (v) {
+            var was = row.o;
+            row.o = v;
+            if (was === 'Is changed' && v !== 'Is changed') { row.v = ''; inp.value = ''; }
+            paintOp();
+            changed();
+          }
+        }).el, idO, key + 'o', true));
+        d.appendChild(field('Value', inp, idV, key + 'v', true));
+        paintOp();
+        var del = h('button', 'icon-btn', TRASH);
+        del.type = 'button';
+        var last = S.conds.length === 1 && group.length === 1;
+        del.disabled = last;
+        var lbl = ri ? 'Delete OR condition' : 'Delete condition ' + (gi + 1);
+        del.setAttribute('aria-label', last ? 'At least one condition is required' : lbl);
+        del.title = last ? 'At least one condition is required' : lbl;
+        del.addEventListener('click', function () {
+          if (group.length > 1) {
+            group.splice(ri, 1);
+          } else {
+            S.conds.splice(gi, 1);
+            setLogic(removeFromLogic(q('#flInput').value, gi + 1, S.conds.length));
+          }
+          renderConds();
           changed();
-        }
-      }).el, idO, 'c' + i + 'o', true));
-      d.appendChild(field('Value', inp, idV, 'c' + i + 'v', true));
-      paintOp();
-      var del = h('button', 'icon-btn', TRASH);
-      del.type = 'button';
-      del.disabled = S.conds.length === 1;
-      del.setAttribute('aria-label', del.disabled ? 'At least one condition is required' : 'Delete condition ' + (i + 1));
-      del.title = del.disabled ? 'At least one condition is required' : 'Delete condition';
-      del.addEventListener('click', function () {
-        S.conds.splice(i, 1);
-        setLogic(removeFromLogic(q('#flInput').value, i + 1, S.conds.length));
+        });
+        d.appendChild(del);
+        g.appendChild(d);
+      });
+      var or = h('button', 'link', PLUS + 'Add OR Condition');
+      or.type = 'button';
+      or.setAttribute('aria-label', 'Add OR condition to condition ' + (gi + 1));
+      or.addEventListener('click', function () {
+        group.push(blankCond());
         renderConds();
         changed();
+        var rows = q('#conds').children[gi].querySelectorAll('.cond');
+        var nr = rows[rows.length - 1];
+        if (nr && nr.scrollIntoView) nr.scrollIntoView({ block: 'nearest' });
       });
-      d.appendChild(del);
-      box.appendChild(d);
+      g.appendChild(or);
+      box.appendChild(g);
     });
     var full = S.conds.length >= MAX;
     q('#addCond').disabled = full;
-    q('#addOr').disabled = full;
     q('#maxNote').hidden = !full;
   }
   function setRowCount(n) {
     var before = S.conds.length;
-    while (S.conds.length < n) S.conds.push(blankCond());
+    while (S.conds.length < n) S.conds.push([blankCond()]);
     while (S.conds.length > n && isBlank(S.conds[S.conds.length - 1]) && S.conds.length > 1) S.conds.pop();
     if (S.conds.length !== before) renderConds();
   }
-  function addCondition(op) {
+  function addCondition() {
+    var op = 'AND';
     if (S.conds.length >= MAX) return;
     var cur = q('#flInput').value.trim();
     var p = parseLogic(cur);
-    S.conds.push(blankCond());
+    S.conds.push([blankCond()]);
     var n = S.conds.length;
     var next;
     if (p.err || p.bare || !cur) next = defaultLogic(n - 1) + ' ' + op + ' ' + n;
@@ -772,8 +798,8 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
     R.wtype.set('Record Update');
     R.status.set('Active');
     S.conds = [
-      { f: 'Spektra_SaaSify__Offer_Status__c', o: 'Equals', v: 'DealPurchasedFromMarketplace' },
-      { f: 'Spektra_SaaSify__Offer_Status__c', o: 'Is changed', v: 'true' }
+      [{ f: 'Spektra_SaaSify__Offer_Status__c', o: 'Equals', v: 'DealPurchasedFromMarketplace' }],
+      [{ f: 'Spektra_SaaSify__Offer_Status__c', o: 'Is changed', v: 'true' }]
     ];
     setLogic('1 AND 2');
     S.target = 'Opportunity'; R.target.set('Opportunity');
@@ -789,7 +815,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
     q('#wfName').value = '';
     R.wtype.set(''); R.status.set('');
     setLogic('1');
-    S.conds = [blankCond()];
+    S.conds = [[blankCond()]];
     S.target = ''; R.target.set('');
     resetRecord();
     S.touched = {}; S.submitted = false;
@@ -801,7 +827,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
   }
 
   function initModal() {
-    S = { conds: [blankCond()], target: '', ident: '', lookupField: '', staticId: '', fields: [], touched: {}, submitted: false, addAttempt: false, presetApplied: false, initial: '' };
+    S = { conds: [[blankCond()]], target: '', ident: '', lookupField: '', staticId: '', fields: [], touched: {}, submitted: false, addAttempt: false, presetApplied: false, initial: '' };
     R = {};
     R.wtype = makeSelect({ options: ['Record Update', 'Record Creation', 'Email Automation'], labelId: 'lbWType', onChange: changed });
     R.status = makeSelect({ options: ['Active', 'Inactive'], labelId: 'lbStatus', onChange: changed });
@@ -850,8 +876,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #0176d3;outline-offse
       changed();
     });
     q('#wfName').addEventListener('input', changed);
-    q('#addCond').addEventListener('click', function () { addCondition('AND'); });
-    q('#addOr').addEventListener('click', function () { addCondition('OR'); });
+    q('#addCond').addEventListener('click', function () { addCondition(); });
     modalEl.addEventListener('focusout', function (e) {
       var t = e.target;
       if (t && t.classList && t.classList.contains('inp')) {
